@@ -9,6 +9,9 @@ from timeit import default_timer as timer
 
 import random
 
+import os
+
+cache = {}
 
 def proof_of_work(last_proof):
     """
@@ -23,14 +26,20 @@ def proof_of_work(last_proof):
     start = timer()
 
     print("Searching for next proof")
-    proof = 0
-    #  TODO: Your code here
-
+    last_hash = hashlib.sha256(f'{last_proof}'.encode()).hexdigest()
+    
+    if last_hash[-6:] in cache:
+        proof = cache[last_hash[-6:]]
+    else:
+        proof = random.randrange(-2**31, 2**31 - 1)
+        while not valid_proof(last_hash, proof, cache):
+            proof += 1
+    
     print("Proof found: " + str(proof) + " in " + str(timer() - start))
     return proof
 
 
-def valid_proof(last_hash, proof):
+def valid_proof(last_hash, proof, cache):
     """
     Validates the Proof:  Multi-ouroborus:  Do the last six characters of
     the hash of the last proof match the first six characters of the hash
@@ -39,8 +48,9 @@ def valid_proof(last_hash, proof):
     IE:  last_hash: ...AE9123456, new hash 123456E88...
     """
 
-    # TODO: Your code here!
-    pass
+    curr_hash = hashlib.sha256(f'{proof}'.encode()).hexdigest()
+    cache[curr_hash[:6]] = proof
+    return last_hash[-6:] in cache
 
 
 if __name__ == '__main__':
@@ -53,7 +63,8 @@ if __name__ == '__main__':
     coins_mined = 0
 
     # Load or create ID
-    f = open("my_id.txt", "r")
+    f_path = os.path.join(os.path.dirname(__file__), "my_id.txt")
+    f = open(f_path, "r")
     id = f.read()
     print("ID is", id)
     f.close()
